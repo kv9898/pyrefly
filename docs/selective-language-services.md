@@ -144,7 +144,9 @@ For a minimal setup with only type checking and go-to-definition:
 
 ## Backward Compatibility
 
-The existing `python.pyrefly.disableLanguageServices` boolean setting still works and will disable **all** language services when set to `true`. The new selective disabling is fully backward compatible.
+The existing `python.pyrefly.disableLanguageServices` (plural, present tense) boolean setting still works and will disable **all** language services when set to `true`. 
+
+The new `python.pyrefly.disabledLanguageServices` (past tense) object allows for selective disabling of individual services. Both settings are fully backward compatible and can be used independently or together.
 
 ## Testing
 
