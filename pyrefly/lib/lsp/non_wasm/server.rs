@@ -399,6 +399,7 @@ pub fn dispatch_lsp_events(connection: &Connection, lsp_queue: LspQueue) {
 pub fn capabilities(
     indexing_mode: IndexingMode,
     initialization_params: &InitializeParams,
+    disabled_services: &crate::commands::lsp::DisabledLanguageServices,
 ) -> ServerCapabilities {
     let augments_syntax_tokens = initialization_params
         .capabilities
@@ -413,42 +414,92 @@ pub fn capabilities(
             text_document_sync: Some(TextDocumentSyncCapability::Kind(
                 TextDocumentSyncKind::INCREMENTAL,
             )),
-            definition_provider: Some(OneOf::Left(true)),
-            type_definition_provider: Some(TypeDefinitionProviderCapability::Simple(true)),
-            code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
-                code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
-                ..Default::default()
-            })),
-            completion_provider: Some(CompletionOptions {
-                trigger_characters: Some(vec![".".to_owned()]),
-                ..Default::default()
-            }),
-            document_highlight_provider: Some(OneOf::Left(true)),
+            definition_provider: if disabled_services.definition {
+                None
+            } else {
+                Some(OneOf::Left(true))
+            },
+            type_definition_provider: if disabled_services.type_definition {
+                None
+            } else {
+                Some(TypeDefinitionProviderCapability::Simple(true))
+            },
+            code_action_provider: if disabled_services.code_action {
+                None
+            } else {
+                Some(CodeActionProviderCapability::Options(CodeActionOptions {
+                    code_action_kinds: Some(vec![CodeActionKind::QUICKFIX]),
+                    ..Default::default()
+                }))
+            },
+            completion_provider: if disabled_services.completion {
+                None
+            } else {
+                Some(CompletionOptions {
+                    trigger_characters: Some(vec![".".to_owned()]),
+                    ..Default::default()
+                })
+            },
+            document_highlight_provider: if disabled_services.document_highlight {
+                None
+            } else {
+                Some(OneOf::Left(true))
+            },
             // Find references won't work properly if we don't know all the files.
-            references_provider: match indexing_mode {
-                IndexingMode::None => None,
-                IndexingMode::LazyNonBlockingBackground | IndexingMode::LazyBlocking => {
-                    Some(OneOf::Left(true))
+            references_provider: if disabled_services.references {
+                None
+            } else {
+                match indexing_mode {
+                    IndexingMode::None => None,
+                    IndexingMode::LazyNonBlockingBackground | IndexingMode::LazyBlocking => {
+                        Some(OneOf::Left(true))
+                    }
                 }
             },
-            rename_provider: match indexing_mode {
-                IndexingMode::None => None,
-                IndexingMode::LazyNonBlockingBackground | IndexingMode::LazyBlocking => {
-                    Some(OneOf::Right(RenameOptions {
-                        prepare_provider: Some(true),
-                        work_done_progress_options: Default::default(),
-                    }))
+            rename_provider: if disabled_services.rename {
+                None
+            } else {
+                match indexing_mode {
+                    IndexingMode::None => None,
+                    IndexingMode::LazyNonBlockingBackground | IndexingMode::LazyBlocking => {
+                        Some(OneOf::Right(RenameOptions {
+                            prepare_provider: Some(true),
+                            work_done_progress_options: Default::default(),
+                        }))
+                    }
                 }
             },
-            signature_help_provider: Some(SignatureHelpOptions {
-                trigger_characters: Some(vec!["(".to_owned(), ",".to_owned()]),
-                ..Default::default()
-            }),
-            hover_provider: Some(HoverProviderCapability::Simple(true)),
-            inlay_hint_provider: Some(OneOf::Left(true)),
-            document_symbol_provider: Some(OneOf::Left(true)),
-            workspace_symbol_provider: Some(OneOf::Left(true)),
-            semantic_tokens_provider: if augments_syntax_tokens {
+            signature_help_provider: if disabled_services.signature_help {
+                None
+            } else {
+                Some(SignatureHelpOptions {
+                    trigger_characters: Some(vec!["(".to_owned(), ",".to_owned()]),
+                    ..Default::default()
+                })
+            },
+            hover_provider: if disabled_services.hover {
+                None
+            } else {
+                Some(HoverProviderCapability::Simple(true))
+            },
+            inlay_hint_provider: if disabled_services.inlay_hint {
+                None
+            } else {
+                Some(OneOf::Left(true))
+            },
+            document_symbol_provider: if disabled_services.document_symbol {
+                None
+            } else {
+                Some(OneOf::Left(true))
+            },
+            workspace_symbol_provider: if disabled_services.workspace_symbol {
+                None
+            } else {
+                Some(OneOf::Left(true))
+            },
+            semantic_tokens_provider: if disabled_services.semantic_tokens {
+                None
+            } else if augments_syntax_tokens {
                 // We currently only return partial tokens (e.g. no tokens for keywords right now).
                 // If the client doesn't support `augments_syntax_tokens` to fallback baseline
                 // syntax highlighting for tokens we don't provide, it will be a regression
@@ -503,6 +554,7 @@ pub fn lsp_loop(
     initialization_params: InitializeParams,
     indexing_mode: IndexingMode,
     workspace_indexing_limit: usize,
+    _disabled_services: crate::commands::lsp::DisabledLanguageServices,
 ) -> anyhow::Result<()> {
     eprintln!("Reading messages");
     let connection_for_dispatcher = connection.dupe();

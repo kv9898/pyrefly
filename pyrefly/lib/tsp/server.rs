@@ -180,5 +180,10 @@ pub fn tsp_capabilities(
 ) -> ServerCapabilities {
     // Use the same capabilities as LSP - TSP server supports the same features
     // but will only respond to TSP protocol requests
-    capabilities(indexing_mode, initialization_params)
+    // For TSP, we use default (empty) disabled services since it's controlled via TSP protocol
+    capabilities(
+        indexing_mode,
+        initialization_params,
+        &crate::commands::lsp::DisabledLanguageServices::default(),
+    )
 }
