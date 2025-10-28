@@ -825,3 +825,47 @@ fn test_diagnostics_file_in_excludes() {
 
     interaction.shutdown();
 }
+
+#[test]
+fn test_selective_disable_hover() {
+    let test_files_root = get_test_files_root();
+    let scope_uri = Url::from_file_path(test_files_root.path()).unwrap();
+    let mut interaction = LspInteraction::new();
+    interaction.set_root(test_files_root.path().to_path_buf());
+    interaction.initialize(InitializeSettings {
+        workspace_folders: Some(vec![("test".to_owned(), scope_uri.clone())]),
+        configuration: Some(None),
+        ..Default::default()
+    });
+
+    interaction.server.did_open("foo.py");
+    
+    // Now configure to disable hover
+    interaction.server.did_change_configuration();
+
+    interaction
+        .client
+        .expect_configuration_request(2, Some(vec![&scope_uri]));
+    interaction.server.send_configuration_response(
+        2, 
+        serde_json::json!([{
+            "pyrefly": {
+                "disabledLanguageServices": {
+                    "hover": true
+                }
+            }
+        }])
+    );
+
+    // Test that hover is now disabled (returns empty response)
+    interaction.server.hover("foo.py", 6, 16);
+    interaction.client.expect_response(Response {
+        id: RequestId::from(2),
+        result: Some(serde_json::json!({
+            "contents": []
+        })),
+        error: None,
+    });
+
+    interaction.shutdown();
+}
