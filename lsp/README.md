@@ -24,7 +24,7 @@ to ensure your project is set up properly, see
 The following configuration options are IDE-specific and exposed as VSCode
 settings:
 
-- `python.pyrefly.displayTypeErrors` [enum: default, force-on, force-off]: by
+- `python.pyrefly.disableTypeErrors` [enum: default, force-on, force-off]: by
   default, Pyrefly will only provide type errors in your project if a
   `pyrefly.toml` is present. Modify this setting to override the IDE
   diagnostics.
@@ -32,17 +32,5 @@ settings:
   will provide both type errors and other language features like go-to
   definition, intellisense, hover, etc. Enable this option to keep type errors
   from Pyrefly unchanged but use VSCode's Python extension for everything else.
-- `python.pyrefly.disabledLanguageServices` [object]: selectively disable
-  individual language services. This is an object with boolean properties for
-  each service: `definition`, `typeDefinition`, `codeAction`, `completion`,
-  `documentHighlight`, `references`, `rename`, `signatureHelp`, `hover`,
-  `inlayHint`, `documentSymbol`, `workspaceSymbol`, and `semanticTokens`.
-  For example, to disable hover and document symbols:
-  ```json
-  "python.pyrefly.disabledLanguageServices": {
-    "hover": true,
-    "documentSymbol": true
-  }
-  ```
 - `pyrefly.lspPath` [string: '']: if your platform is not supported, you can
   build pyrefly from source and specify the binary here.

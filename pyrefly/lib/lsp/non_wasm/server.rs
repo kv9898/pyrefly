@@ -187,7 +187,6 @@ use crate::lsp::non_wasm::queue::HeavyTaskQueue;
 use crate::lsp::non_wasm::queue::LspEvent;
 use crate::lsp::non_wasm::queue::LspQueue;
 use crate::lsp::non_wasm::transaction_manager::TransactionManager;
-use crate::lsp::non_wasm::workspace::DisabledLanguageServicesConfig;
 use crate::lsp::non_wasm::workspace::LspAnalysisConfig;
 use crate::lsp::non_wasm::workspace::Workspace;
 use crate::lsp::non_wasm::workspace::Workspaces;
@@ -854,28 +853,17 @@ impl Server {
                     if let Some(params) = self
                         .extract_request_params_or_send_err_response::<HoverRequest>(params, &x.id)
                     {
-                        // Check if hover is disabled
-                        if self.is_service_disabled(&params.text_document_position_params.text_document.uri, |d| d.hover.unwrap_or(false)) {
-                            self.send_response(new_response(
-                                x.id,
-                                Ok(Hover {
-                                    contents: HoverContents::Array(Vec::new()),
-                                    range: None,
-                                }),
-                            ));
-                        } else {
-                            let default_response = Hover {
-                                contents: HoverContents::Array(Vec::new()),
-                                range: None,
-                            };
-                            let transaction =
-                                ide_transaction_manager.non_committable_transaction(&self.state);
-                            self.send_response(new_response(
-                                x.id,
-                                Ok(self.hover(&transaction, params).unwrap_or(default_response)),
-                            ));
-                            ide_transaction_manager.save(transaction);
-                        }
+                        let default_response = Hover {
+                            contents: HoverContents::Array(Vec::new()),
+                            range: None,
+                        };
+                        let transaction =
+                            ide_transaction_manager.non_committable_transaction(&self.state);
+                        self.send_response(new_response(
+                            x.id,
+                            Ok(self.hover(&transaction, params).unwrap_or(default_response)),
+                        ));
+                        ide_transaction_manager.save(transaction);
                     }
                 } else if let Some(params) = as_request::<InlayHintRequest>(&x) {
                     if let Some(params) = self
@@ -937,24 +925,16 @@ impl Server {
                             params, &x.id,
                         )
                     {
-                        // Check if document symbols are disabled
-                        if self.is_service_disabled(&params.text_document.uri, |d| d.document_symbol.unwrap_or(false)) {
-                            self.send_response(new_response(
-                                x.id,
-                                Ok(DocumentSymbolResponse::Nested(Vec::new())),
-                            ));
-                        } else {
-                            let transaction =
-                                ide_transaction_manager.non_committable_transaction(&self.state);
-                            self.send_response(new_response(
-                                x.id,
-                                Ok(DocumentSymbolResponse::Nested(
-                                    self.hierarchical_document_symbols(&transaction, params)
-                                        .unwrap_or_default(),
-                                )),
-                            ));
-                            ide_transaction_manager.save(transaction);
-                        }
+                        let transaction =
+                            ide_transaction_manager.non_committable_transaction(&self.state);
+                        self.send_response(new_response(
+                            x.id,
+                            Ok(DocumentSymbolResponse::Nested(
+                                self.hierarchical_document_symbols(&transaction, params)
+                                    .unwrap_or_default(),
+                            )),
+                        ));
+                        ide_transaction_manager.save(transaction);
                     }
                 } else if let Some(params) = as_request::<WorkspaceSymbolRequest>(&x) {
                     if let Some(params) = self
@@ -1706,22 +1686,6 @@ impl Server {
     fn make_handle_if_enabled(&self, uri: &Url) -> Option<Handle> {
         self.make_handle_with_lsp_analysis_config_if_enabled(uri)
             .map(|(handle, _)| handle)
-    }
-
-    /// Check if a specific language service is disabled for the given URI
-    fn is_service_disabled(&self, uri: &Url, service_check: impl Fn(&DisabledLanguageServicesConfig) -> bool) -> bool {
-        let path = uri.to_file_path().unwrap();
-        self.workspaces.get_with(path, |(_, workspace)| {
-            // First check the global disable_language_services flag
-            if workspace.disable_language_services {
-                return true;
-            }
-            // Then check if this specific service is disabled
-            if let Some(disabled_services) = &workspace.disabled_language_services {
-                return service_check(disabled_services);
-            }
-            false
-        })
     }
 
     fn goto_definition(

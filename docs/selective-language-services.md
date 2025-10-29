@@ -1,6 +1,6 @@
 # Selective Language Service Disabling
 
-Pyrefly's LSP server now supports selective disabling of individual language services. This allows users to choose exactly which IDE features they want enabled, providing flexibility for different workflows and preferences.
+Pyrefly's LSP server supports selective disabling of individual language services via command-line arguments. This allows users to choose exactly which IDE features they want enabled, providing flexibility for different workflows and preferences.
 
 ## Available Language Services
 
@@ -22,24 +22,9 @@ The following language services can be selectively disabled:
 
 ## Usage
 
-### VSCode Extension
-
-Add the following to your VSCode settings (`.vscode/settings.json` or user settings):
-
-```json
-{
-  "python.pyrefly.disabledLanguageServices": {
-    "hover": true,
-    "documentSymbol": true
-  }
-}
-```
-
-This example disables hover tooltips and document symbols (outline), while keeping all other services enabled.
-
 ### Command-Line Arguments
 
-When starting the LSP server manually, you can use command-line flags:
+When starting the LSP server, you can use command-line flags to disable specific services:
 
 ```bash
 pyrefly lsp --disable-hover --disable-document-symbol
@@ -60,9 +45,9 @@ Available flags:
 - `--disable-workspace-symbol`
 - `--disable-semantic-tokens`
 
-### Passing Arguments via VSCode Extension
+### Configuring via Editor Settings
 
-You can also pass these command-line arguments through the VSCode extension settings:
+For editors that support passing arguments to the LSP server (like VSCode), you can configure the arguments through editor settings. For VSCode, use the `pyrefly.lspArguments` setting:
 
 ```json
 {
@@ -74,26 +59,26 @@ You can also pass these command-line arguments through the VSCode extension sett
 }
 ```
 
+This allows you to configure which services are disabled without manually starting the LSP server.
+
 ## Implementation Details
 
 ### Architecture Decision
 
-The selective disabling is implemented at the **binary level** (LSP server) rather than the VSCode extension level. This design decision provides several benefits:
+The selective disabling is implemented at the **binary level** (LSP server) via command-line arguments. This design provides several benefits:
 
 1. **Cross-editor compatibility** - Works with any editor that uses Pyrefly's LSP server
-2. **Cleaner architecture** - The server respects capabilities rather than the client filtering
-3. **Performance** - Server doesn't process requests for disabled services
+2. **Cleaner architecture** - The server respects capabilities through standard LSP initialization
+3. **Performance** - Disabled services are not advertised as capabilities
 4. **Maintainability** - Logic is centralized in one place
 
 ### How It Works
 
-1. **Initialization**: Disabled services are communicated to the server via:
-   - Command-line arguments (stored in `LspArgs`)
-   - IDE configuration (sent via `workspace/configuration` request)
+1. **Initialization**: Disabled services are passed via command-line arguments (stored in `LspArgs`)
 
 2. **Capability Negotiation**: The server's `capabilities` function checks disabled services and omits them from the advertised capabilities during LSP initialization.
 
-3. **Runtime Checks**: For services that are disabled via IDE configuration after initialization, the server performs runtime checks before processing requests.
+3. **Service Availability**: Once capabilities are negotiated, clients will not request disabled services since they are not advertised.
 
 ## Use Cases
 
@@ -103,10 +88,11 @@ If you're working on a very large codebase and find that certain language servic
 
 ```json
 {
-  "python.pyrefly.disabledLanguageServices": {
-    "references": true,
-    "workspaceSymbol": true
-  }
+  "pyrefly.lspArguments": [
+    "lsp",
+    "--disable-references",
+    "--disable-workspace-symbol"
+  ]
 }
 ```
 
@@ -116,10 +102,11 @@ If you're using multiple language servers and want to use Pyrefly for type check
 
 ```json
 {
-  "python.pyrefly.disabledLanguageServices": {
-    "completion": true,
-    "hover": true
-  }
+  "pyrefly.lspArguments": [
+    "lsp",
+    "--disable-completion",
+    "--disable-hover"
+  ]
 }
 ```
 
@@ -129,34 +116,28 @@ For a minimal setup with only type checking and go-to-definition:
 
 ```json
 {
-  "python.pyrefly.disabledLanguageServices": {
-    "hover": true,
-    "completion": true,
-    "signatureHelp": true,
-    "documentHighlight": true,
-    "documentSymbol": true,
-    "workspaceSymbol": true,
-    "semanticTokens": true,
-    "inlayHint": true
-  }
+  "pyrefly.lspArguments": [
+    "lsp",
+    "--disable-hover",
+    "--disable-completion",
+    "--disable-signature-help",
+    "--disable-document-highlight",
+    "--disable-document-symbol",
+    "--disable-workspace-symbol",
+    "--disable-semantic-tokens",
+    "--disable-inlay-hint"
+  ]
 }
 ```
 
-## Backward Compatibility
-
-The existing `python.pyrefly.disableLanguageServices` (plural, present tense) boolean setting still works and will disable **all** language services when set to `true`. 
-
-The new `python.pyrefly.disabledLanguageServices` (past tense) object allows for selective disabling of individual services. Both settings are fully backward compatible and can be used independently or together.
-
 ## Testing
 
-The implementation includes comprehensive tests to ensure:
-- Individual services can be disabled independently
-- Other services continue to work when one is disabled
-- Configuration changes are applied correctly
-- Command-line arguments work as expected
+The implementation includes tests to ensure:
+- Command-line arguments are correctly parsed
+- Disabled services are omitted from capabilities
+- The LSP server functions correctly with services disabled
 
 Run tests with:
 ```bash
-cargo test --package pyrefly --lib test::lsp::lsp_interaction::configuration
+cargo test --package pyrefly --lib
 ```
