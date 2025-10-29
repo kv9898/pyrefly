@@ -17,8 +17,7 @@ The following language services can be selectively disabled:
 9. **hover** - Hover tooltips
 10. **inlayHint** - Inlay hints
 11. **documentSymbol** - Document symbols (outline)
-12. **workspaceSymbol** - Workspace-wide symbol search
-13. **semanticTokens** - Semantic highlighting
+12. **semanticTokens** - Semantic highlighting
 
 ## Usage
 
@@ -32,7 +31,7 @@ Add the following to your `settings.json` (workspace or user settings):
 
 ```json
 {
-  "pyrefly.analysis.disabledLanguageServices": {
+  "python.pyrefly.analysis.disabledLanguageServices": {
     "hover": true,
     "documentSymbol": true
   }
@@ -86,9 +85,8 @@ If you're working on a very large codebase and find that certain language servic
 
 ```json
 {
-  "pyrefly.analysis.disabledLanguageServices": {
+  "python.pyrefly.analysis.disabledLanguageServices": {
     "references": true,
-    "workspaceSymbol": true
   }
 }
 ```
@@ -99,7 +97,7 @@ If you're using multiple language servers and want to use Pyrefly for type check
 
 ```json
 {
-  "pyrefly.analysis.disabledLanguageServices": {
+  "python.pyrefly.analysis.disabledLanguageServices": {
     "completion": true,
     "hover": true
   }
@@ -112,13 +110,12 @@ For a minimal setup with only type checking and go-to-definition:
 
 ```json
 {
-  "pyrefly.analysis.disabledLanguageServices": {
+  "python.pyrefly.analysis.disabledLanguageServices": {
     "hover": true,
     "completion": true,
     "signatureHelp": true,
     "documentHighlight": true,
     "documentSymbol": true,
-    "workspaceSymbol": true,
     "semanticTokens": true,
     "inlayHint": true
   }
@@ -135,7 +132,7 @@ You can have different configurations for different workspace folders:
     {
       "path": "/path/to/project1",
       "settings": {
-        "pyrefly.analysis.disabledLanguageServices": {
+        "python.pyrefly.analysis.disabledLanguageServices": {
           "hover": true
         }
       }
@@ -143,7 +140,7 @@ You can have different configurations for different workspace folders:
     {
       "path": "/path/to/project2",
       "settings": {
-        "pyrefly.analysis.disabledLanguageServices": {
+        "python.pyrefly.analysis.disabledLanguageServices": {
           "completion": true
         }
       }
@@ -171,4 +168,6 @@ Run tests with:
 ```bash
 cargo test --package pyrefly --lib
 ```
+
+
 
