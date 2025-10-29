@@ -310,7 +310,6 @@ pub enum LanguageService {
     Hover,
     InlayHint,
     DocumentSymbol,
-    WorkspaceSymbol,
     SemanticTokens,
 }
 
@@ -1655,7 +1654,6 @@ impl Server {
                         LanguageService::Hover => disabled_services.hover,
                         LanguageService::InlayHint => disabled_services.inlay_hint,
                         LanguageService::DocumentSymbol => disabled_services.document_symbol,
-                        LanguageService::WorkspaceSymbol => disabled_services.workspace_symbol,
                         LanguageService::SemanticTokens => disabled_services.semantic_tokens,
                     };
                     if is_disabled {
@@ -2343,3 +2341,5 @@ impl TspInterface for Server {
         )
     }
 }
+
+

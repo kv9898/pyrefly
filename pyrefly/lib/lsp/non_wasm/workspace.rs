@@ -196,10 +196,7 @@ pub struct DisabledLanguageServices {
     #[serde(default)]
     pub inlay_hint: bool,
     #[serde(default)]
-    pub document_symbol: bool,
-    #[serde(default)]
-    pub workspace_symbol: bool,
-    #[serde(default)]
+    pub document_symbol: bool,    #[serde(default)]
     pub semantic_tokens: bool,
 }
 
@@ -639,3 +636,4 @@ mod tests {
         assert!(config.pyrefly.is_some());
     }
 }
+
