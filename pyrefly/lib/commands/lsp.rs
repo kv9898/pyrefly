@@ -79,11 +79,8 @@ fn initialize_connection(
     let (request_id, initialization_params) = connection.initialize_start()?;
     let initialization_params: InitializeParams =
         serde_json::from_value(initialization_params).unwrap();
-    let server_capabilities = serde_json::to_value(capabilities(
-        args.indexing_mode,
-        &initialization_params,
-    ))
-    .unwrap();
+    let server_capabilities =
+        serde_json::to_value(capabilities(args.indexing_mode, &initialization_params)).unwrap();
     let initialize_data = serde_json::json!({
         "capabilities": server_capabilities,
         "serverInfo": {
