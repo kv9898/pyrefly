@@ -828,19 +828,6 @@ impl LspInteraction {
         let args = LspArgs {
             indexing_mode,
             workspace_indexing_limit: 50,
-            disable_definition: false,
-            disable_type_definition: false,
-            disable_code_action: false,
-            disable_completion: false,
-            disable_document_highlight: false,
-            disable_references: false,
-            disable_rename: false,
-            disable_signature_help: false,
-            disable_hover: false,
-            disable_inlay_hint: false,
-            disable_document_symbol: false,
-            disable_workspace_symbol: false,
-            disable_semantic_tokens: false,
         };
         let connection = Connection {
             sender: language_client_sender,
