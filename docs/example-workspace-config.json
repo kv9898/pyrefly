@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Example Pyrefly Workspace Configuration",
+  "description": "This file shows an example of how to configure disabled language services in Pyrefly through workspace configuration.",
+  "pyrefly": {
+    "analysis": {
+      "disabledLanguageServices": {
+        "hover": false,
+        "completion": false,
+        "signatureHelp": false,
+        "definition": false,
+        "typeDefinition": false,
+        "codeAction": false,
+        "documentHighlight": false,
+        "references": false,
+        "rename": false,
+        "inlayHint": false,
+        "documentSymbol": false,
+        "workspaceSymbol": false,
+        "semanticTokens": false
+      }
+    }
+  },
+  "examples": {
+    "disableHoverAndCompletion": {
+      "pyrefly": {
+        "analysis": {
+          "disabledLanguageServices": {
+            "hover": true,
+            "completion": true
+          }
+        }
+      }
+    },
+    "disablePerformanceIntensiveServices": {
+      "pyrefly": {
+        "analysis": {
+          "disabledLanguageServices": {
+            "references": true,
+            "workspaceSymbol": true,
+            "semanticTokens": true
+          }
+        }
+      }
+    },
+    "minimalMode": {
+      "pyrefly": {
+        "analysis": {
+          "disabledLanguageServices": {
+            "hover": true,
+            "completion": true,
+            "signatureHelp": true,
+            "documentHighlight": true,
+            "documentSymbol": true,
+            "workspaceSymbol": true,
+            "semanticTokens": true,
+            "inlayHint": true
+          }
+        }
+      }
+    }
+  }
+}

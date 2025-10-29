@@ -61,12 +61,12 @@ For other editors that support LSP workspace configuration, send a configuration
 
 ### Architecture Decision
 
-The selective disabling is implemented at the **workspace configuration level**. This design provides several benefits:
+The selective disabling is implemented at the **workspace configuration level**. This design provides several benefits over the previous command-line argument approach:
 
-1. **Dynamic Configuration** - Services can be disabled/enabled without restarting the LSP server
-2. **Per-workspace Control** - Different workspace folders can have different service configurations
-3. **Editor Integration** - Works seamlessly with editor configuration systems (VSCode settings, etc.)
-4. **Standard LSP Pattern** - Uses the standard LSP workspace configuration protocol
+1. **Dynamic Configuration** - Services can be disabled/enabled without restarting the LSP server (unlike command-line flags which required restart)
+2. **Per-workspace Control** - Different workspace folders can have different service configurations (command-line flags applied globally)
+3. **Editor Integration** - Works seamlessly with editor configuration systems like VSCode settings (more natural than editing launch arguments)
+4. **Standard LSP Pattern** - Uses the standard LSP workspace configuration protocol (better compatibility across editors)
 
 ### How It Works
 
@@ -159,6 +159,13 @@ The implementation includes tests to ensure:
 - Disabled services return early from request handlers
 - The LSP server functions correctly with services disabled
 - Configuration changes take effect dynamically
+
+To test dynamic configuration changes:
+1. Start the LSP server with a workspace
+2. Make a request for a service (e.g., hover) - it should work
+3. Update the workspace configuration to disable that service
+4. Make the same request again - it should now return no response
+5. Re-enable the service in configuration - it should work again
 
 Run tests with:
 ```bash
