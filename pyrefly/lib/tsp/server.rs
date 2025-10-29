@@ -180,8 +180,5 @@ pub fn tsp_capabilities(
 ) -> ServerCapabilities {
     // Use the same capabilities as LSP - TSP server supports the same features
     // but will only respond to TSP protocol requests
-    capabilities(
-        indexing_mode,
-        initialization_params,
-    )
+    capabilities(indexing_mode, initialization_params)
 }
