@@ -196,7 +196,8 @@ pub struct DisabledLanguageServices {
     #[serde(default)]
     pub inlay_hint: bool,
     #[serde(default)]
-    pub document_symbol: bool,    #[serde(default)]
+    pub document_symbol: bool,
+    #[serde(default)]
     pub semantic_tokens: bool,
 }
 
@@ -301,11 +302,6 @@ impl Workspaces {
         scope_uri: &Option<Url>,
         config: Value,
     ) {
-        eprintln!(
-            "DEBUG: Received configuration: {}",
-            serde_json::to_string_pretty(&config).unwrap_or_else(|_| format!("{:?}", config))
-        );
-
         let config = match serde_json::from_value::<LspConfig>(config.clone()) {
             Err(e) => {
                 eprintln!(
@@ -322,7 +318,6 @@ impl Workspaces {
 
         let mut analysis_handled = false;
         if let Some(pyrefly) = config.pyrefly {
-            eprintln!("DEBUG: Found pyrefly config section");
             if let Some(extra_paths) = pyrefly.extra_paths {
                 self.update_search_paths(modified, scope_uri, extra_paths);
             }
@@ -332,19 +327,13 @@ impl Workspaces {
             self.update_display_type_errors(modified, scope_uri, pyrefly.display_type_errors);
             // Handle analysis config nested under pyrefly (e.g., pyrefly.analysis.disabledLanguageServices)
             if let Some(analysis) = pyrefly.analysis {
-                eprintln!("DEBUG: Found pyrefly.analysis config: {:?}", analysis);
                 self.update_ide_settings(modified, scope_uri, analysis);
                 analysis_handled = true;
-            } else {
-                eprintln!("DEBUG: No pyrefly.analysis config found");
             }
-        } else {
-            eprintln!("DEBUG: No pyrefly config section found");
         }
         // Also handle analysis at top level for backward compatibility (only if not already handled)
         if !analysis_handled {
             if let Some(analysis) = config.analysis {
-                eprintln!("DEBUG: Found top-level analysis config: {:?}", analysis);
                 self.update_ide_settings(modified, scope_uri, analysis);
             }
         }
@@ -395,26 +384,17 @@ impl Workspaces {
         scope_uri: &Option<Url>,
         lsp_analysis_config: LspAnalysisConfig,
     ) {
-        eprintln!(
-            "DEBUG: Updating IDE settings with analysis config: {:?}",
-            lsp_analysis_config
-        );
-        if let Some(disabled_services) = lsp_analysis_config.disabled_language_services {
-            eprintln!("DEBUG: Disabled language services: {:?}", disabled_services);
-        }
         let mut workspaces = self.workspaces.write();
         match scope_uri {
             Some(scope_uri) => {
                 if let Some(workspace) = workspaces.get_mut(&scope_uri.to_file_path().unwrap()) {
                     *modified = true;
                     workspace.lsp_analysis_config = Some(lsp_analysis_config);
-                    eprintln!("DEBUG: Updated workspace at {:?}", scope_uri);
                 }
             }
             None => {
                 *modified = true;
                 self.default.write().lsp_analysis_config = Some(lsp_analysis_config);
-                eprintln!("DEBUG: Updated default workspace");
             }
         }
     }
@@ -636,4 +616,3 @@ mod tests {
         assert!(config.pyrefly.is_some());
     }
 }
-
