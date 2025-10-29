@@ -169,6 +169,38 @@ pub enum DiagnosticMode {
     OpenFilesOnly,
 }
 
+/// Configuration for which language services should be disabled
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DisabledLanguageServices {
+    #[serde(default)]
+    pub definition: bool,
+    #[serde(default)]
+    pub type_definition: bool,
+    #[serde(default)]
+    pub code_action: bool,
+    #[serde(default)]
+    pub completion: bool,
+    #[serde(default)]
+    pub document_highlight: bool,
+    #[serde(default)]
+    pub references: bool,
+    #[serde(default)]
+    pub rename: bool,
+    #[serde(default)]
+    pub signature_help: bool,
+    #[serde(default)]
+    pub hover: bool,
+    #[serde(default)]
+    pub inlay_hint: bool,
+    #[serde(default)]
+    pub document_symbol: bool,
+    #[serde(default)]
+    pub workspace_symbol: bool,
+    #[serde(default)]
+    pub semantic_tokens: bool,
+}
+
 /// https://code.visualstudio.com/docs/python/settings-reference#_pylance-language-server
 #[derive(Clone, Copy, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -177,6 +209,8 @@ pub struct LspAnalysisConfig {
     pub diagnostic_mode: Option<DiagnosticMode>,
     pub import_format: Option<ImportFormat>,
     pub inlay_hints: Option<InlayHintConfig>,
+    #[serde(default)]
+    pub disabled_language_services: Option<DisabledLanguageServices>,
 }
 
 fn deserialize_analysis<'de, D>(deserializer: D) -> Result<Option<LspAnalysisConfig>, D::Error>
