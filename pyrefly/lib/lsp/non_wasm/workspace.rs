@@ -60,7 +60,6 @@ pub struct Workspace {
     python_info: Option<PythonInfo>,
     search_path: Option<Vec<PathBuf>>,
     pub disable_language_services: bool,
-    pub disabled_language_services: Option<DisabledLanguageServicesConfig>,
     pub display_type_errors: Option<DisplayTypeErrors>,
     pub lsp_analysis_config: Option<LspAnalysisConfig>,
 }
@@ -153,30 +152,11 @@ impl WeakConfigCache {
     }
 }
 
-#[derive(Debug, Default, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct DisabledLanguageServicesConfig {
-    pub definition: Option<bool>,
-    pub type_definition: Option<bool>,
-    pub code_action: Option<bool>,
-    pub completion: Option<bool>,
-    pub document_highlight: Option<bool>,
-    pub references: Option<bool>,
-    pub rename: Option<bool>,
-    pub signature_help: Option<bool>,
-    pub hover: Option<bool>,
-    pub inlay_hint: Option<bool>,
-    pub document_symbol: Option<bool>,
-    pub workspace_symbol: Option<bool>,
-    pub semantic_tokens: Option<bool>,
-}
-
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PyreflyClientConfig {
     display_type_errors: Option<DisplayTypeErrors>,
     disable_language_services: Option<bool>,
-    disabled_language_services: Option<DisabledLanguageServicesConfig>,
     extra_paths: Option<Vec<PathBuf>>,
 }
 
@@ -309,9 +289,6 @@ impl Workspaces {
             if let Some(disable_language_services) = pyrefly.disable_language_services {
                 self.update_disable_language_services(scope_uri, disable_language_services);
             }
-            if let Some(disabled_services) = pyrefly.disabled_language_services {
-                self.update_disabled_language_services(scope_uri, disabled_services);
-            }
             self.update_display_type_errors(modified, scope_uri, pyrefly.display_type_errors);
         }
         if let Some(analysis) = config.analysis {
@@ -333,23 +310,6 @@ impl Workspaces {
                 }
             }
             None => self.default.write().disable_language_services = disable_language_services,
-        }
-    }
-
-    /// Update disabled language services configuration for scope_uri, None if default workspace
-    fn update_disabled_language_services(
-        &self,
-        scope_uri: &Option<Url>,
-        disabled_services: DisabledLanguageServicesConfig,
-    ) {
-        let mut workspaces = self.workspaces.write();
-        match scope_uri {
-            Some(scope_uri) => {
-                if let Some(workspace) = workspaces.get_mut(&scope_uri.to_file_path().unwrap()) {
-                    workspace.disabled_language_services = Some(disabled_services);
-                }
-            }
-            None => self.default.write().disabled_language_services = Some(disabled_services),
         }
     }
 
