@@ -296,22 +296,7 @@ impl ServerConnection {
     }
 }
 
-/// Enum representing different language service types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LanguageService {
-    Definition,
-    TypeDefinition,
-    CodeAction,
-    Completion,
-    DocumentHighlight,
-    References,
-    Rename,
-    SignatureHelp,
-    Hover,
-    InlayHint,
-    DocumentSymbol,
-    SemanticTokens,
-}
+
 
 pub struct Server {
     connection: ServerConnection,
@@ -1115,7 +1100,7 @@ impl Server {
     ) -> Option<ProvideTypeResponse> {
         let uri = &params.text_document.uri;
         // provide_type is not a standard LSP service but we'll use Hover as it's similar
-        let handle = self.make_handle_if_enabled(uri, LanguageService::Hover)?;
+        let handle = self.make_handle_if_enabled(uri, HoverRequest::METHOD)?;
         provide_type(transaction, &handle, params.positions)
     }
 
@@ -1626,10 +1611,13 @@ impl Server {
 
     /// Create a handle with analysis config that decides language service behavior.
     /// Return None if the workspace has language services disabled (and thus you shouldn't do anything).
+    /// 
+    /// `method` should be the LSP request METHOD string from lsp_types::request::* types
+    /// (e.g., GotoDefinition::METHOD, HoverRequest::METHOD, etc.)
     fn make_handle_with_lsp_analysis_config_if_enabled(
         &self,
         uri: &Url,
-        service: LanguageService,
+        method: &str,
     ) -> Option<(Handle, Option<LspAnalysisConfig>)> {
         let path = uri.to_file_path().unwrap();
         self.workspaces.get_with(path.clone(), |(_, workspace)| {
@@ -1642,22 +1630,8 @@ impl Server {
             // Check if the specific service is disabled
             if let Some(lsp_config) = workspace.lsp_analysis_config {
                 if let Some(disabled_services) = lsp_config.disabled_language_services {
-                    let is_disabled = match service {
-                        LanguageService::Definition => disabled_services.definition,
-                        LanguageService::TypeDefinition => disabled_services.type_definition,
-                        LanguageService::CodeAction => disabled_services.code_action,
-                        LanguageService::Completion => disabled_services.completion,
-                        LanguageService::DocumentHighlight => disabled_services.document_highlight,
-                        LanguageService::References => disabled_services.references,
-                        LanguageService::Rename => disabled_services.rename,
-                        LanguageService::SignatureHelp => disabled_services.signature_help,
-                        LanguageService::Hover => disabled_services.hover,
-                        LanguageService::InlayHint => disabled_services.inlay_hint,
-                        LanguageService::DocumentSymbol => disabled_services.document_symbol,
-                        LanguageService::SemanticTokens => disabled_services.semantic_tokens,
-                    };
-                    if is_disabled {
-                        eprintln!("Skipping request - {:?} service disabled", service);
+                    if disabled_services.is_disabled(method) {
+                        eprintln!("Skipping request - {} service disabled", method);
                         return None;
                     }
                 }
@@ -1675,8 +1649,8 @@ impl Server {
         })
     }
 
-    fn make_handle_if_enabled(&self, uri: &Url, service: LanguageService) -> Option<Handle> {
-        self.make_handle_with_lsp_analysis_config_if_enabled(uri, service)
+    fn make_handle_if_enabled(&self, uri: &Url, method: &str) -> Option<Handle> {
+        self.make_handle_with_lsp_analysis_config_if_enabled(uri, method)
             .map(|(handle, _)| handle)
     }
 
@@ -1686,7 +1660,7 @@ impl Server {
         params: GotoDefinitionParams,
     ) -> Option<GotoDefinitionResponse> {
         let uri = &params.text_document_position_params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::Definition)?;
+        let handle = self.make_handle_if_enabled(uri, GotoDefinition::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let range = info
             .lined_buffer()
@@ -1711,7 +1685,7 @@ impl Server {
         params: GotoTypeDefinitionParams,
     ) -> Option<GotoTypeDefinitionResponse> {
         let uri = &params.text_document_position_params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::TypeDefinition)?;
+        let handle = self.make_handle_if_enabled(uri, GotoTypeDefinition::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let range = info
             .lined_buffer()
@@ -1738,7 +1712,7 @@ impl Server {
     ) -> anyhow::Result<CompletionResponse> {
         let uri = &params.text_document_position.text_document.uri;
         let (handle, import_format) =
-            match self.make_handle_with_lsp_analysis_config_if_enabled(uri, LanguageService::Completion) {
+            match self.make_handle_with_lsp_analysis_config_if_enabled(uri, Completion::METHOD) {
                 None => {
                     return Ok(CompletionResponse::List(CompletionList {
                         is_incomplete: false,
@@ -1770,7 +1744,7 @@ impl Server {
         params: CodeActionParams,
     ) -> Option<CodeActionResponse> {
         let uri = &params.text_document.uri;
-        let (handle, lsp_config) = self.make_handle_with_lsp_analysis_config_if_enabled(uri, LanguageService::CodeAction)?;
+        let (handle, lsp_config) = self.make_handle_with_lsp_analysis_config_if_enabled(uri, CodeActionRequest::METHOD)?;
         let import_format = lsp_config.and_then(|c| c.import_format).unwrap_or_default();
         let module_info = transaction.get_module_info(&handle)?;
         let range = module_info.lined_buffer().from_lsp_range(params.range);
@@ -1802,7 +1776,7 @@ impl Server {
         params: DocumentHighlightParams,
     ) -> Option<Vec<DocumentHighlight>> {
         let uri = &params.text_document_position_params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::DocumentHighlight)?;
+        let handle = self.make_handle_if_enabled(uri, DocumentHighlightRequest::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let position = info
             .lined_buffer()
@@ -1828,7 +1802,7 @@ impl Server {
         position: Position,
         map_result: impl FnOnce(Vec<(Url, Vec<Range>)>) -> V + Send + Sync + 'static,
     ) {
-        let Some(handle) = self.make_handle_if_enabled(uri, LanguageService::References) else {
+        let Some(handle) = self.make_handle_if_enabled(uri, References::METHOD) else {
             return self.send_response(new_response::<Option<V>>(request_id, Ok(None)));
         };
         let transaction = ide_transaction_manager.non_committable_transaction(&self.state);
@@ -1966,7 +1940,7 @@ impl Server {
         params: TextDocumentPositionParams,
     ) -> Option<PrepareRenameResponse> {
         let uri = &params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::Rename)?;
+        let handle = self.make_handle_if_enabled(uri, Rename::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let position = info.lined_buffer().from_lsp_position(params.position);
         transaction
@@ -1980,7 +1954,7 @@ impl Server {
         params: SignatureHelpParams,
     ) -> Option<SignatureHelp> {
         let uri = &params.text_document_position_params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::SignatureHelp)?;
+        let handle = self.make_handle_if_enabled(uri, SignatureHelpRequest::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let position = info
             .lined_buffer()
@@ -1990,7 +1964,7 @@ impl Server {
 
     fn hover(&self, transaction: &Transaction<'_>, params: HoverParams) -> Option<Hover> {
         let uri = &params.text_document_position_params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::Hover)?;
+        let handle = self.make_handle_if_enabled(uri, HoverRequest::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let position = info
             .lined_buffer()
@@ -2007,7 +1981,7 @@ impl Server {
         let uri = &params.text_document.uri;
         let range = &params.range;
         let (handle, lsp_analysis_config) =
-            self.make_handle_with_lsp_analysis_config_if_enabled(uri, LanguageService::InlayHint)?;
+            self.make_handle_with_lsp_analysis_config_if_enabled(uri, InlayHintRequest::METHOD)?;
         let info = transaction.get_module_info(&handle)?;
         let t = transaction.inlay_hints(
             &handle,
@@ -2048,7 +2022,7 @@ impl Server {
         params: SemanticTokensParams,
     ) -> Option<SemanticTokensResult> {
         let uri = &params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::SemanticTokens)?;
+        let handle = self.make_handle_if_enabled(uri, SemanticTokensFullRequest::METHOD)?;
         Some(SemanticTokensResult::Tokens(SemanticTokens {
             result_id: None,
             data: transaction
@@ -2063,7 +2037,7 @@ impl Server {
         params: SemanticTokensRangeParams,
     ) -> Option<SemanticTokensRangeResult> {
         let uri = &params.text_document.uri;
-        let handle = self.make_handle_if_enabled(uri, LanguageService::SemanticTokens)?;
+        let handle = self.make_handle_if_enabled(uri, SemanticTokensRangeRequest::METHOD)?;
         let module_info = transaction.get_module_info(&handle)?;
         let range = module_info.lined_buffer().from_lsp_range(params.range);
         Some(SemanticTokensRangeResult::Tokens(SemanticTokens {
@@ -2096,7 +2070,7 @@ impl Server {
         {
             return None;
         }
-        let handle = self.make_handle_if_enabled(uri, LanguageService::DocumentSymbol)?;
+        let handle = self.make_handle_if_enabled(uri, DocumentSymbolRequest::METHOD)?;
         transaction.symbols(&handle)
     }
 

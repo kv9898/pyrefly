@@ -201,6 +201,30 @@ pub struct DisabledLanguageServices {
     pub semantic_tokens: bool,
 }
 
+impl DisabledLanguageServices {
+    /// Check if a language service is disabled based on the LSP request METHOD string
+    /// Uses the METHOD constants from lsp_types::request::* types
+    pub fn is_disabled(&self, method: &str) -> bool {
+        match method {
+            "textDocument/definition" => self.definition,
+            "textDocument/typeDefinition" => self.type_definition,
+            "textDocument/codeAction" => self.code_action,
+            "textDocument/completion" => self.completion,
+            "textDocument/documentHighlight" => self.document_highlight,
+            "textDocument/references" => self.references,
+            "textDocument/rename" => self.rename,
+            "textDocument/signatureHelp" => self.signature_help,
+            "textDocument/hover" => self.hover,
+            "textDocument/inlayHint" => self.inlay_hint,
+            "textDocument/documentSymbol" => self.document_symbol,
+            "textDocument/semanticTokens/full" | "textDocument/semanticTokens/range" => {
+                self.semantic_tokens
+            }
+            _ => false, // Unknown methods are not disabled
+        }
+    }
+}
+
 /// https://code.visualstudio.com/docs/python/settings-reference#_pylance-language-server
 #[derive(Clone, Copy, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
