@@ -1097,8 +1097,7 @@ impl Server {
         params: crate::lsp::wasm::provide_type::ProvideTypeParams,
     ) -> Option<ProvideTypeResponse> {
         let uri = &params.text_document.uri;
-        // provide_type is not a standard LSP service but we'll use Hover as it's similar
-        let handle = self.make_handle_if_enabled(uri, HoverRequest::METHOD)?;
+        let handle = make_open_handle(&self.state, &uri.to_file_path().unwrap());
         provide_type(transaction, &handle, params.positions)
     }
 
