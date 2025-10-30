@@ -436,7 +436,6 @@ fn test_disable_specific_language_services_via_analysis_config() {
                     "analysis": {
                         "disabledLanguageServices": {
                             "hover": true,
-                            "documentSymbol": true
                         }
                     }
                 }
@@ -446,7 +445,6 @@ fn test_disable_specific_language_services_via_analysis_config() {
                     "analysis": {
                         "disabledLanguageServices": {
                             "hover": true,
-                            "documentSymbol": true
                         }
                     }
                 }
