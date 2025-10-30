@@ -296,8 +296,6 @@ impl ServerConnection {
     }
 }
 
-
-
 pub struct Server {
     connection: ServerConnection,
     lsp_queue: LspQueue,
@@ -1611,7 +1609,7 @@ impl Server {
 
     /// Create a handle with analysis config that decides language service behavior.
     /// Return None if the workspace has language services disabled (and thus you shouldn't do anything).
-    /// 
+    ///
     /// `method` should be the LSP request METHOD string from lsp_types::request::* types
     /// (e.g., GotoDefinition::METHOD, HoverRequest::METHOD, etc.)
     fn make_handle_with_lsp_analysis_config_if_enabled(
@@ -1626,7 +1624,7 @@ impl Server {
                 eprintln!("Skipping request - language services disabled");
                 return None;
             }
-            
+
             // Check if the specific service is disabled
             if let Some(lsp_config) = workspace.lsp_analysis_config {
                 if let Some(disabled_services) = lsp_config.disabled_language_services {
@@ -1636,7 +1634,7 @@ impl Server {
                     }
                 }
             }
-            
+
             let module_path = if self.open_files.read().contains_key(&path) {
                 ModulePath::memory(path)
             } else {
@@ -1744,7 +1742,8 @@ impl Server {
         params: CodeActionParams,
     ) -> Option<CodeActionResponse> {
         let uri = &params.text_document.uri;
-        let (handle, lsp_config) = self.make_handle_with_lsp_analysis_config_if_enabled(uri, CodeActionRequest::METHOD)?;
+        let (handle, lsp_config) =
+            self.make_handle_with_lsp_analysis_config_if_enabled(uri, CodeActionRequest::METHOD)?;
         let import_format = lsp_config.and_then(|c| c.import_format).unwrap_or_default();
         let module_info = transaction.get_module_info(&handle)?;
         let range = module_info.lined_buffer().from_lsp_range(params.range);
@@ -2315,5 +2314,3 @@ impl TspInterface for Server {
         )
     }
 }
-
-
